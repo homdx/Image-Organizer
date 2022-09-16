@@ -5,7 +5,9 @@ Created on Wed May  6 19:26:27 2020
 @author: Somil
 """
 
-import PIL 
+#import PIL 
+#from PIL.Image import core as _imaging
+from PIL import Image
 import os
 import shutil
 import datetime
@@ -77,17 +79,18 @@ class ImageOrganizer:
         
     def sort_by_device_yr_month(self):
         for fname in self.images:
-            with PIL.Image.open(os.path.join(self.dirname,fname)) as img:
+            with Image.open(os.path.join(self.dirname,fname)) as img:
                 exif = img._getexif() 
             
-            ts = self.preprocess_exif(exif[306])
+            ts = self.preprocess_exif(exif[36867])
             date = ts.split(' ')[0]
             manuf = self.preprocess_exif(exif[271])
             device = self.preprocess_exif(exif[272])
             merged = manuf + ' ' + device
             year = datetime.datetime.strptime(date, '%Y:%m:%d').strftime('%Y')
             month = datetime.datetime.strptime(date, '%Y:%m:%d').strftime('%b')
-            
+            formated_date = datetime.datetime.strptime(ts,"%Y:%m:%d %H:%M:%S")
+            Unix_timestamp = datetime.datetime.timestamp(formated_date)          
             if not os.path.isdir(merged):
                 os.mkdir(merged)
                 
@@ -98,5 +101,12 @@ class ImageOrganizer:
                 os.mkdir(os.path.join(merged,year,month))
         
             shutil.copy(os.path.join(self.dirname,fname),os.path.join(merged,year,month,fname))
+            #Update timestampt
+            os.utime(os.path.join(merged,year,month,fname),(Unix_timestamp,Unix_timestamp))
+            #Update timestpamt for folder
+            folder = os.path.dirname(os.path.abspath(os.path.join(merged,year,month,fname)))
+            os.utime(folder,(Unix_timestamp,Unix_timestamp))
+
+
             print("Image {} moved from {} to {} successfully\n".format(fname,os.path.join(self.dirname,fname),os.path.join(merged,year,month,fname)))
         
