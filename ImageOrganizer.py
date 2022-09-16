@@ -78,16 +78,15 @@ class ImageOrganizer:
         
             shutil.copy(os.path.join(self.dirname,fname),os.path.join(year,month,fname))
             print("Image {} moved from {} to {} successfully\n".format(fname,os.path.join(self.dirname,fname),os.path.join(year,month,fname)))
-            
-        
+
     def sort_by_device_yr_month(self):
+        current=0
         for fname in self.images:
-            print(os.path.isfile(fname))
             if os.path.isfile(fname) == True:
                 #with Image.open(os.path.join(self.dirname,fname)) as img:
+                current+=1
                 with Image.open(os.path.join(fname)) as img:
-                    exif = img._getexif() 
-                
+                    exif = img._getexif()
                 try:
                     ts = self.preprocess_exif(exif[36867])
                     date = ts.split(' ')[0]
@@ -102,10 +101,8 @@ class ImageOrganizer:
                         os.mkdir(merged)
                     if not os.path.isdir(os.path.join(merged,year)):
                         os.mkdir(os.path.join(merged,year))
-                    
                     if not os.path.isdir(os.path.join(merged,year,month)):
                         os.mkdir(os.path.join(merged,year,month))
-                
                     #shutil.copy(os.path.join(self.dirname,fname),os.path.join(merged,year,month,fname))
 
                     shutil.copy(os.path.join(fname),os.path.join(merged,year,month,os.path.basename(fname)))
@@ -114,7 +111,7 @@ class ImageOrganizer:
                     #Update timestpamt for folder
                     folder = os.path.dirname(os.path.abspath(os.path.join(merged,year,month,os.path.basename(fname))))
                     os.utime(folder,(Unix_timestamp,Unix_timestamp))
-                    print("Image {} moved from {} to {} successfully\n".format(fname,os.path.join(fname),os.path.join(merged,year,month,os.path.basename(fname))))
+                    print("Image {} moved from {} to {} successfully\n".format(fname,os.path.join(fname),os.path.join(merged,year,month,os.path.basename(fname))), "  [",len(self.images),"/",current,"]")
                 except:
                     print("Error metadata from ",fname)
                     merged = "Undefined"
