@@ -11,12 +11,15 @@ from PIL import Image
 import os
 import shutil
 import datetime
-
+import glob
 
 
 class ImageOrganizer:
     def __init__(self,dirname=''):
         self.images = os.listdir(dirname)
+         #recursive read
+        self.images = [f for f in glob.glob(dirname + "**/*.jpg", recursive=True)]
+        self.images = self.images + [f for f in glob.glob(dirname + "**/*.JPG", recursive=True)]
         self.dirname = dirname
         
     def preprocess_exif(self,data):
@@ -27,7 +30,7 @@ class ImageOrganizer:
 
     def sort_by_device(self):
         for fname in self.images:
-            with PIL.Image.open(os.path.join(self.dirname,fname)) as img:
+            with Image.open(os.path.join(self.dirname,fname)) as img:
                 exif = img._getexif() 
             
             manuf = self.preprocess_exif(exif[271])
@@ -43,7 +46,7 @@ class ImageOrganizer:
             
     def sort_by_year(self):
         for fname in self.images:
-            with PIL.Image.open(os.path.join(self.dirname,fname)) as img:
+            with Image.open(os.path.join(self.dirname,fname)) as img:
                 exif = img._getexif() 
             
             ts = self.preprocess_exif(exif[306])
@@ -59,7 +62,7 @@ class ImageOrganizer:
 
     def sort_by_yr_month(self):
         for fname in self.images:
-            with PIL.Image.open(os.path.join(self.dirname,fname)) as img:
+            with Image.open(os.path.join(self.dirname,fname)) as img:
                 exif = img._getexif() 
             
             ts = self.preprocess_exif(exif[306])
@@ -79,34 +82,37 @@ class ImageOrganizer:
         
     def sort_by_device_yr_month(self):
         for fname in self.images:
-            with Image.open(os.path.join(self.dirname,fname)) as img:
-                exif = img._getexif() 
-            
-            ts = self.preprocess_exif(exif[36867])
-            date = ts.split(' ')[0]
-            manuf = self.preprocess_exif(exif[271])
-            device = self.preprocess_exif(exif[272])
-            merged = manuf + ' ' + device
-            year = datetime.datetime.strptime(date, '%Y:%m:%d').strftime('%Y')
-            month = datetime.datetime.strptime(date, '%Y:%m:%d').strftime('%b')
-            formated_date = datetime.datetime.strptime(ts,"%Y:%m:%d %H:%M:%S")
-            Unix_timestamp = datetime.datetime.timestamp(formated_date)          
-            if not os.path.isdir(merged):
-                os.mkdir(merged)
+            print(os.path.isfile(fname))
+            if os.path.isfile(fname) == True:
+                #with Image.open(os.path.join(self.dirname,fname)) as img:
+                with Image.open(os.path.join(fname)) as img:
+                    exif = img._getexif() 
                 
-            if not os.path.isdir(os.path.join(merged,year)):
-                os.mkdir(os.path.join(merged,year))
+                ts = self.preprocess_exif(exif[36867])
+                date = ts.split(' ')[0]
+                manuf = self.preprocess_exif(exif[271])
+                device = self.preprocess_exif(exif[272])
+                merged = manuf + ' ' + device
+                year = datetime.datetime.strptime(date, '%Y:%m:%d').strftime('%Y')
+                month = datetime.datetime.strptime(date, '%Y:%m:%d').strftime('%b')
+                formated_date = datetime.datetime.strptime(ts,"%Y:%m:%d %H:%M:%S")
+                Unix_timestamp = datetime.datetime.timestamp(formated_date)          
+                if not os.path.isdir(merged):
+                    os.mkdir(merged)
+                    
+                if not os.path.isdir(os.path.join(merged,year)):
+                    os.mkdir(os.path.join(merged,year))
+                
+                if not os.path.isdir(os.path.join(merged,year,month)):
+                    os.mkdir(os.path.join(merged,year,month))
             
-            if not os.path.isdir(os.path.join(merged,year,month)):
-                os.mkdir(os.path.join(merged,year,month))
-        
-            shutil.copy(os.path.join(self.dirname,fname),os.path.join(merged,year,month,fname))
-            #Update timestampt
-            os.utime(os.path.join(merged,year,month,fname),(Unix_timestamp,Unix_timestamp))
-            #Update timestpamt for folder
-            folder = os.path.dirname(os.path.abspath(os.path.join(merged,year,month,fname)))
-            os.utime(folder,(Unix_timestamp,Unix_timestamp))
+                #shutil.copy(os.path.join(self.dirname,fname),os.path.join(merged,year,month,fname))
 
-
-            print("Image {} moved from {} to {} successfully\n".format(fname,os.path.join(self.dirname,fname),os.path.join(merged,year,month,fname)))
+                shutil.copy(os.path.join(fname),os.path.join(merged,year,month,os.path.basename(fname)))
+                #Update timestampt
+                os.utime(os.path.join(merged,year,month,os.path.basename(fname)),(Unix_timestamp,Unix_timestamp))
+                #Update timestpamt for folder
+                folder = os.path.dirname(os.path.abspath(os.path.join(merged,year,month,os.path.basename(fname))))
+                os.utime(folder,(Unix_timestamp,Unix_timestamp))
+                print("Image {} moved from {} to {} successfully\n".format(fname,os.path.join(fname),os.path.join(merged,year,month,os.path.basename(fname))))
         
