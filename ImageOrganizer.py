@@ -9,6 +9,7 @@ Created on Wed May  6 19:26:27 2020
 #from PIL.Image import core as _imaging
 from PIL import Image
 import os
+import stat
 import shutil
 import datetime
 import glob
@@ -88,7 +89,6 @@ class ImageOrganizer:
                 try:
                     with Image.open(os.path.join(fname)) as img:
                         exif = img._getexif()
-#                try:
                     ts = self.preprocess_exif(exif[36867])
                     date = ts.split(' ')[0]
                     manuf = self.preprocess_exif(exif[271])
@@ -113,9 +113,14 @@ class ImageOrganizer:
                     folder = os.path.dirname(os.path.abspath(os.path.join(merged,year,month,os.path.basename(fname))))
                     os.utime(folder,(Unix_timestamp,Unix_timestamp))
                     print("Image {} copied from {} to {} successfully\n".format(fname,os.path.join(fname),os.path.join(merged,year,month,os.path.basename(fname))), "  [", current," / ",len(self.images),"]")
+                    os.chmod(os.path.join(merged,year,month,os.path.basename(fname)),stat.S_IRWXG )
                 except:
                     print("Error metadata from ",fname)
                     merged = "Undefined"
                     if not os.path.isdir(merged):
                         os.mkdir(merged)
-                    shutil.copy(os.path.join(fname),os.path.join(merged,os.path.basename(fname)))
+                    #os.chmod(os.path.join(fname), stat.S_IRWXG)
+                    if os.path.join(fname) != os.path.join(merged,os.path.basename(fname)):
+                        shutil.copy(os.path.join(fname),os.path.join(merged,os.path.basename(fname)))
+                        os.chmod(os.path.join(merged,os.path.basename(fname)), stat.S_IRWXG)
+                        print("Image without exif copied from {} to {} successfully\n".format(os.path.join(fname),os.path.join(merged,os.path.basename(fname))),  "  [", current," / ",len(self.images),"]")
